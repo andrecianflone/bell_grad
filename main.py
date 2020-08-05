@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.functional as F
 import torch.optim as optim
+from models import GradientNetwork,SigmoidPolicy,Critic
 
 from envs.gridworld import GridworldEnv
 from envs.windy_gridworld import WindyGridworldEnv
@@ -18,8 +19,10 @@ import argparse
 from utils import Logger
 from utils import create_folder
 
-from environments import build_twostate_MDP, mdp_imani_counterexample, mdp_fig2d, \
-build_gridworld, build_windy_gridworld, build_FrozenLake, build_FrozenLake8, build_SB_example35, build_CliffWalking
+# TODO: we shouldn't preload any environments, this slows down debugging
+from environments import build_twostate_MDP, mdp_imani_counterexample,\
+        mdp_fig2d, build_gridworld, build_windy_gridworld, build_FrozenLake, \
+        build_FrozenLake8, build_SB_example35, build_CliffWalking
 
 from functools import partial
 import autograd.numpy as np
@@ -204,7 +207,6 @@ def softmax(vals, temp=1.):
     return np.exp(  (1./temp) * vals - logsumexp(  (1./temp) * vals, axis=1, keepdims=True) )
 
 
-
 #### Compute the true solutuon with Value Iteration and Exact Policy Gradient
 
 print ("Computing Value Iteration and Exact Policy Gradient")
@@ -295,49 +297,6 @@ plt.ylabel('Value')
 plt.title('Policy Gradient with Vector Valued Rewards')
 plt.legend()
 plt.show()
-
-class GradientNetwork(nn.Module):
-    def __init__(self, state_dim, feature_size=64):
-        super(GradientNetwork, self).__init__()
-        self.l1 = nn.Linear(int(feature_size + state_dim), 100)
-        self.l2 = nn.Linear(100, 100)
-        # Grad output is same size as parameters (features)
-        self.l3 = nn.Linear(100, int(feature_size))
-
-    def forward(self, state, actor_params):
-        x = torch.cat([state, actor_params], dim=1)
-        y = torch.tanh(self.l1(x))
-        y = torch.tanh(self.l2(y))
-        grad_output = self.l3(y)
-
-        return grad_output
-
-
-class SigmoidPolicy(nn.Module):
-    '''
-    Simple Boltzmann policy with temperature = 1
-    '''
-    def __init__(self, num_states, num_actions, feature_size=64):
-        super(SigmoidPolicy, self).__init__()
-        self.fc1 = nn.Linear(num_states, num_actions, bias=False)
-        # self.fc2 = nn.Linear(num_states, feature_size)
-        self.softmax = nn.Softmax(dim=1)
-
-    def forward(self, one_hot_state):
-        prob_a = self.softmax(self.fc1(one_hot_state))
-        return prob_a
-
-class Critic(nn.Module):
-    '''
-    Trying to implement tabular critic through NN
-    '''
-    def __init__(self, num_states, num_actions):
-        super(Critic, self).__init__()
-        self.fc1 = nn.Linear(num_states, num_actions, bias=False)
-
-    def forward(self, one_hot_state):
-        q_s = self.fc1(one_hot_state)
-        return q_s
 
 def single_run(env, eval_env,
                 num_episodes = 100,

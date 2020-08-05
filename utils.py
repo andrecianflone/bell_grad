@@ -3,8 +3,6 @@ import random
 import os
 import time
 import json
-import torch
-import torch.nn as nn
 
 create_folder = lambda f: [os.makedirs(f) if not os.path.exists(f) else False]
 class Logger(object):
