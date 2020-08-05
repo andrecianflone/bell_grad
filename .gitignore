@@ -1,0 +1,7 @@
+tags
+*.swp
+*__pycache__*
+results/
+*.png
+logs/
+.txt
