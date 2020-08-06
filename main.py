@@ -9,26 +9,17 @@ import torch
 import torch.nn as nn
 import torch.functional as F
 import torch.optim as optim
-from models import GradientNetwork,SigmoidPolicy,Critic
-
-from envs.gridworld import GridworldEnv
-from envs.windy_gridworld import WindyGridworldEnv
-from envs.twostateMDP import twostateMDP
-from scipy.stats import entropy
-import argparse
-from utils import Logger
-from utils import create_folder
-
-# TODO: we shouldn't preload any environments, this slows down debugging
-from environments import build_twostate_MDP, mdp_imani_counterexample,\
-        mdp_fig2d, build_gridworld, build_windy_gridworld, build_FrozenLake, \
-        build_FrozenLake8, build_SB_example35, build_CliffWalking
+import models
+import environments
 
 from functools import partial
 import autograd.numpy as np
 from autograd import value_and_grad
 from autograd.scipy.misc import logsumexp
 
+from scipy.stats import entropy
+import argparse
+import utils
 
 def one_hot_ify(state, num_states):
     res = torch.zeros(1, num_states)
@@ -230,15 +221,15 @@ def single_run(env, eval_env,
     num_actions = env.action_space.n
     return_run = np.zeros(num_episodes)
     samples_run = np.zeros(num_episodes)
-    actor = SigmoidPolicy(num_states, num_actions)
+    actor = models.SigmoidPolicy(num_states, num_actions)
     actor_opt = optim.Adam(actor.parameters(), lr=lr_actor)
-    critic = Critic(num_states, num_actions)
+    critic = models.Critic(num_states, num_actions)
     critic_opt = optim.Adam(critic.parameters(), lr=lr_critic)
 
 
     actor_params_sizes = torch.tensor(np.cumsum([0] + [len(t.flatten()) for t in list(actor.parameters())]))
 
-    gradient_network = GradientNetwork(num_states, actor_params_sizes[-1])
+    gradient_network = models.GradientNetwork(num_states, actor_params_sizes[-1])
     gradient_network_opt = optim.Adam(gradient_network.parameters(), lr=lr_critic)
 
 
@@ -391,9 +382,8 @@ def single_run(env, eval_env,
     logger.save()
     return return_run, samples_run, actor, critic
 
-print("Running")
-
 def main():
+    """Load all settings and launch training"""
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--env', type=str, help='Environment name', default='GridWorld',
@@ -419,57 +409,35 @@ def main():
         policy_name = "baseline"
 
     if args.use_logger:
-        logger = Logger(experiment_name = policy_name, environment_name = args.env, folder = args.folder)
+        logger = utils.Logger(experiment_name = policy_name, environment_name = args.env, folder = args.folder)
         logger.save_args(args)
         print ('Saving to', logger.save_folder)
 
-    if args.env == 'GridWorld':
-        env = GridworldEnv()
-        eval_env = GridworldEnv()
-        mdp = build_gridworld()
-        args.env = "GridWorld"
+    # Get environment
+    env, eval_env, mdp = utils.get_env(args)
 
-    elif args.env == 'WindyGridWorld':
-        env = WindyGridworldEnv()
-        eval_env = WindyGridworldEnv()
-        mdp = build_windy_gridworld()
-        args.env = "WindyGridWorld"
-
-    elif args.env == 'CliffWalking':
-        env = gym.make("CliffWalking-v0")
-        eval_env = gym.make("CliffWalking-v0")
-    elif args.env == 'FrozenLake':
-        env = gym.make("FrozenLake-v0")
-        eval_env = gym.make("FrozenLake-v0")
-
-        mdp = build_FrozenLake()
-        args.env = "FrozenLake"
-
-    elif args.env == 'FrozenLake8':
-        env = gym.make("FrozenLake8x8-v0")
-        eval_env = gym.make("FrozenLake8x8-v0")
-    elif args.env == 'Taxi':
-        env = gym.make("Taxi-v2")
-        eval_env = gym.make("Taxi-v2")
-    elif args.env=='twostateMDP':
-        env = gym.make('twostateMDP-v0')
-        eval_env=gym.make('twostateMDP-v0')
-        mdp = mdp_fig2d()
-        args.env = mdp_fig2d
-
-
+    # Set deterministic
     env.seed(args.seed)
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     torch.backends.cudnn.deterministic = True
     env.reset()
 
+    ###### MAIN LOOP ######
+    print("Running")
+    res_PGT = []
+    for _ in range(args.num_runs):
+        res = single_run(
+                env = env,
+                eval_env = eval_env,
+                num_episodes = args.num_episodes,
+                lr_actor=args.lr_actor,
+                lr_critic=args.lr_critic)
+        res_PGT.append(res)
 
-
-    res_PGT = [single_run(env = env, eval_env = eval_env, args.num_episodes = args.num_episodes, lr_actor=args.lr_actor, lr_critic=args.lr_critic) for _ in range(args.num_runs)]
+    # Save results
     returns_PGT = np.array([i[0] for i in res_PGT])
     samples_PGT = np.array([i[1] for i in res_PGT])
-
     np.save(logger.save_folder + '/', returns_PGT)
     logger.save_2(returns_PGT)
 

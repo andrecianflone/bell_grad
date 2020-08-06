@@ -1,5 +1,5 @@
 
-from functools import partial 
+from functools import partial
 import autograd.numpy as np
 from autograd import value_and_grad
 from autograd.scipy.misc import logsumexp
@@ -64,7 +64,7 @@ def mdp_imani_counterexample():
     P[1, 3] = [0, 0, 0, 1]
 
     gamma = 0.9
-    
+
     R = np.zeros((STATES, ACTIONS))
     R[0, 0] = 0
     R[0, 1] = 1
@@ -78,7 +78,7 @@ def mdp_imani_counterexample():
     return P, R, gamma, initial_distribution
 
 def mdp_fig2d():
-  """ Figure 2 d) of 
+  """ Figure 2 d) of
   ''The Value Function Polytope in Reinforcement Learning''
   by Dadashi et al. (2019) https://arxiv.org/abs/1901.11524
   """
@@ -92,11 +92,11 @@ def mdp_fig2d():
 def build_gridworld():
     env = GridworldEnv()
     P = np.zeros((env.action_space.n, env.observation_space.n, env.observation_space.n))
-    R = np.zeros((env.observation_space.n, env.action_space.n)) 
-    for s in range(env.observation_space.n): 
-        for a in range(env.action_space.n): 
-            for p, ns, r, _ in env.P[s][a]: 
-                P[a, s, ns] += p 
+    R = np.zeros((env.observation_space.n, env.action_space.n))
+    for s in range(env.observation_space.n):
+        for a in range(env.action_space.n):
+            for p, ns, r, _ in env.P[s][a]:
+                P[a, s, ns] += p
                 R[s, a] += p*r
     initial_distribution = np.ones(env.observation_space.n)/np.sum(np.ones(env.observation_space.n))
     gamma = 0.9
@@ -106,11 +106,11 @@ def build_gridworld():
 def build_windy_gridworld():
     env = WindyGridworldEnv()
     P = np.zeros((env.action_space.n, env.observation_space.n, env.observation_space.n))
-    R = np.zeros((env.observation_space.n, env.action_space.n)) 
-    for s in range(env.observation_space.n): 
-        for a in range(env.action_space.n): 
-            for p, ns, r, _ in env.P[s][a]: 
-                P[a, s, ns] += p 
+    R = np.zeros((env.observation_space.n, env.action_space.n))
+    for s in range(env.observation_space.n):
+        for a in range(env.action_space.n):
+            for p, ns, r, _ in env.P[s][a]:
+                P[a, s, ns] += p
                 R[s, a] += p*r
     initial_distribution = np.ones(env.observation_space.n)/np.sum(np.ones(env.observation_space.n))
     gamma = 0.9
@@ -119,11 +119,11 @@ def build_windy_gridworld():
 def build_FrozenLake():
     env  = gym.make("FrozenLake-v0")
     P = np.zeros((env.action_space.n, env.observation_space.n, env.observation_space.n))
-    R = np.zeros((env.observation_space.n, env.action_space.n)) 
-    for s in range(env.observation_space.n): 
-        for a in range(env.action_space.n): 
-            for p, ns, r, _ in env.env.P[s][a]: 
-                P[a, s, ns] += p 
+    R = np.zeros((env.observation_space.n, env.action_space.n))
+    for s in range(env.observation_space.n):
+        for a in range(env.action_space.n):
+            for p, ns, r, _ in env.env.P[s][a]:
+                P[a, s, ns] += p
                 R[s, a] += p*r
     initial_distribution = np.zeros(env.observation_space.n)
     initial_distribution[0] = 1
@@ -135,11 +135,11 @@ def build_FrozenLake():
 def build_FrozenLake8():
     env  = gym.make("FrozenLake8x8-v0")
     P = np.zeros((env.action_space.n, env.observation_space.n, env.observation_space.n))
-    R = np.zeros((env.observation_space.n, env.action_space.n)) 
-    for s in range(env.observation_space.n): 
-        for a in range(env.action_space.n): 
-            for p, ns, r, _ in env.env.P[s][a]: 
-                P[a, s, ns] += p 
+    R = np.zeros((env.observation_space.n, env.action_space.n))
+    for s in range(env.observation_space.n):
+        for a in range(env.action_space.n):
+            for p, ns, r, _ in env.env.P[s][a]:
+                P[a, s, ns] += p
                 R[s, a] += p*r
     initial_distribution = np.zeros(env.observation_space.n)
     initial_distribution[0] = 1
@@ -161,7 +161,7 @@ def build_SB_example35():
     """
     size = 5
     P = build_simple_grid(size=size, p_success=1)
-    P=P.reshape(4,25,-1) #reshaping to match the format accepted by the solver. 
+    P=P.reshape(4,25,-1) #reshaping to match the format accepted by the solver.
     # modify P to match dynamics from book.
     P[:, 1, :] = 0 # first set the probability of all actions from state 1 to zero
     P[:, 1, 21] = 1 # now set the probability of going from 1 to 21 with prob 1 for all actions
@@ -180,18 +180,18 @@ def build_SB_example35():
     R[1, :] = +10
     R[3, :] = +5
     initial_distribution = np.ones(P.shape[1])/P.shape[1] # uniform starting probability (assumed)
-    gamma = 0.9    
+    gamma = 0.9
     return P, R, gamma, initial_distribution
 
 
 def build_CliffWalking():
     env  = gym.make("CliffWalking-v0")
     P = np.zeros((env.action_space.n, env.observation_space.n, env.observation_space.n))
-    R = np.zeros((env.observation_space.n, env.action_space.n)) 
-    for s in range(env.observation_space.n): 
-        for a in range(env.action_space.n): 
-            for p, ns, r, _ in env.P[s][a]: 
-                P[a, s, ns] += p 
+    R = np.zeros((env.observation_space.n, env.action_space.n))
+    for s in range(env.observation_space.n):
+        for a in range(env.action_space.n):
+            for p, ns, r, _ in env.P[s][a]:
+                P[a, s, ns] += p
                 R[s, a] += p*r
     initial_distribution = np.zeros(env.observation_space.n)
     initial_distribution[0] = 1

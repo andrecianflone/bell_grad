@@ -53,7 +53,43 @@ class Logger(object):
         with open(os.path.join(self.save_folder, 'params.json'), 'w') as f:
               json.dump(dict(args._get_kwargs()), f)
 
+def get_env():
+    if args.env == 'GridWorld':
+        from envs.gridworld import GridworldEnv
+        env = GridworldEnv()
+        eval_env = GridworldEnv()
+        mdp = environments.build_gridworld()
+
+    elif args.env == 'WindyGridWorld':
+        from envs.windy_gridworld import WindyGridworldEnv
+        env = WindyGridworldEnv()
+        eval_env = WindyGridworldEnv()
+        mdp = environments.build_windy_gridworld()
+
+    elif args.env == 'CliffWalking':
+        env = gym.make("CliffWalking-v0")
+        eval_env = gym.make("CliffWalking-v0")
+    elif args.env == 'FrozenLake':
+        env = gym.make("FrozenLake-v0")
+        eval_env = gym.make("FrozenLake-v0")
+        mdp = environments.build_FrozenLake()
+
+    elif args.env == 'FrozenLake8':
+        env = gym.make("FrozenLake8x8-v0")
+        eval_env = gym.make("FrozenLake8x8-v0")
+    elif args.env == 'Taxi':
+        env = gym.make("Taxi-v2")
+        eval_env = gym.make("Taxi-v2")
+    elif args.env=='twostateMDP':
+        from envs.twostateMDP import twostateMDP
+        env = gym.make('twostateMDP-v0')
+        eval_env=gym.make('twostateMDP-v0')
+        mdp = environments.mdp_fig2d()
+        args.env = environments.mdp_fig2d
+    return env, eval_env, mdp
+
 if __name__ == "__main__":
     logger = Logger(experiment_name="test", environment_name="test_env")
     logger.save_args(args)
+
 
