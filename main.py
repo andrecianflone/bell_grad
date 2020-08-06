@@ -30,85 +30,6 @@ from autograd import value_and_grad
 from autograd.scipy.misc import logsumexp
 
 
-parser = argparse.ArgumentParser()
-
-parser.add_argument('--env', type=str, help='Environment name', default='GridWorld',
-    choices=['GridWorld', 'WindyGridWorld', 'FrozenLake', 'FrozenLake8', 'Taxi', 'CliffWalking','twostateMDP'])
-parser.add_argument('--num_runs', type=int, help='Number of independent runs', default=1)
-parser.add_argument('--lr_actor', type=float, help='Learning rate for actor', default = 0.01)
-parser.add_argument('--lr_critic', type=float, help='Learning rate for critic', default = 0.05)
-parser.add_argument('--num_episodes', type=int, help='Number of episodes', default = 3000)
-parser.add_argument('--lamda_ent', type=float, help='weigting for exploration bonus', default = 1.0)
-parser.add_argument("--use_logger", action="store_true", default=False, help='whether to use logging or not')
-parser.add_argument("--folder", type=str, default='./results/')
-parser.add_argument('--num_latents', type=float, help='latent dimensions', default = 64)
-parser.add_argument('--seed', type=int, help='Random seed', default=0)
-parser.add_argument('--pol_ent', type=float, help='weigting for exploration bonus for the policy', default = 1.0)
-parser.add_argument("--pg_bellman", action="store_true", default=False, help='whether to use meta Bellman update')
-
-args = parser.parse_args()
-args.use_logger = True
-
-env_name      = args.env
-num_runs      = args.num_runs
-num_episodes  = args.num_episodes
-lr_actor      = args.lr_actor
-lr_critic     = args.lr_critic
-num_latents   = args.num_latents
-lamda_ent     = args.lamda_ent
-pol_ent       = args.pol_ent
-
-if args.pg_bellman :
-    policy_name = "pg_bellman"
-else:
-    policy_name = "baseline"
-
-if args.use_logger:
-    logger = Logger(experiment_name = policy_name, environment_name = args.env, folder = args.folder)
-    logger.save_args(args)
-    print ('Saving to', logger.save_folder)
-
-if env_name == 'GridWorld':
-    env = GridworldEnv()
-    eval_env = GridworldEnv()
-    mdp = build_gridworld()
-    env_name = "GridWorld"
-
-elif env_name == 'WindyGridWorld':
-    env = WindyGridworldEnv()
-    eval_env = WindyGridworldEnv()
-    mdp = build_windy_gridworld()
-    env_name = "WindyGridWorld"
-
-elif env_name == 'CliffWalking':
-    env = gym.make("CliffWalking-v0")
-    eval_env = gym.make("CliffWalking-v0")
-elif env_name == 'FrozenLake':
-    env = gym.make("FrozenLake-v0")
-    eval_env = gym.make("FrozenLake-v0")
-
-    mdp = build_FrozenLake()
-    env_name = "FrozenLake"
-
-elif env_name == 'FrozenLake8':
-    env = gym.make("FrozenLake8x8-v0")
-    eval_env = gym.make("FrozenLake8x8-v0")
-elif env_name == 'Taxi':
-    env = gym.make("Taxi-v2")
-    eval_env = gym.make("Taxi-v2")
-elif env_name=='twostateMDP':
-    env = gym.make('twostateMDP-v0')
-    eval_env=gym.make('twostateMDP-v0')
-    mdp = mdp_fig2d()
-    env_name = mdp_fig2d
-
-
-env.seed(args.seed)
-torch.manual_seed(args.seed)
-np.random.seed(args.seed)
-torch.backends.cudnn.deterministic = True
-env.reset()
-
 def one_hot_ify(state, num_states):
     res = torch.zeros(1, num_states)
     res[0,state] = 1
@@ -245,9 +166,9 @@ for item_id, items in enumerate(lmbdas):
     for l in logits_all[item_id]:
         v_eval_items.append(policy_performance(l, softmax, mdp, (1-gamma)*initial_distribution, args))
 
-    # if not (os.path.exists("exact_result" + "/" + env_name  + "/" + str(items))):
-    #   os.makedirs("exact_result" + "/" + env_name + "/" + str(items))
-    # np.save("exact_result" + "/" + env_name + "/" + str(items)+"/result.npy", v_eval_items)
+    # if not (os.path.exists("exact_result" + "/" + args.env  + "/" + str(items))):
+    #   os.makedirs("exact_result" + "/" + args.env + "/" + str(items))
+    # np.save("exact_result" + "/" + args.env + "/" + str(items)+"/result.npy", v_eval_items)
     v_eval_all.append(v_eval_items)
 
 
@@ -273,9 +194,9 @@ v_fin= ((1-gamma)*initial_distribution).T @ vf
 # v_fin = (initial_distribution).T @ vf
 
 v_fin_res = v_fin*np.ones_like(v_eval_all[0])
-# if not (os.path.exists("exact_result" + "/" + env_name + "/vi")):
-#   os.makedirs("exact_result" + "/" + env_name + "/vi")
-# np.save("exact_result" + "/" + env_name + "/vi/result.npy", v_fin_res)
+# if not (os.path.exists("exact_result" + "/" + args.env + "/vi")):
+#   os.makedirs("exact_result" + "/" + args.env + "/vi")
+# np.save("exact_result" + "/" + args.env + "/vi/result.npy", v_fin_res)
 
 
 plt.clf()
@@ -470,12 +391,88 @@ def single_run(env, eval_env,
     logger.save()
     return return_run, samples_run, actor, critic
 
-print("Running PGT")
+print("Running")
 
-res_PGT = [single_run(env = env, eval_env = eval_env, num_episodes = num_episodes, lr_actor=lr_actor, lr_critic=lr_critic) for _ in range(num_runs)]
-returns_PGT = np.array([i[0] for i in res_PGT])
-samples_PGT = np.array([i[1] for i in res_PGT])
+def main():
+    parser = argparse.ArgumentParser()
 
-np.save(logger.save_folder + '/', returns_PGT)
-logger.save_2(returns_PGT)
+    parser.add_argument('--env', type=str, help='Environment name', default='GridWorld',
+        choices=['GridWorld', 'WindyGridWorld', 'FrozenLake', 'FrozenLake8', 'Taxi', 'CliffWalking','twostateMDP'])
+    parser.add_argument('--num_runs', type=int, help='Number of independent runs', default=1)
+    parser.add_argument('--lr_actor', type=float, help='Learning rate for actor', default = 0.01)
+    parser.add_argument('--lr_critic', type=float, help='Learning rate for critic', default = 0.05)
+    parser.add_argument('--num_episodes', type=int, help='Number of episodes', default = 3000)
+    # parser.add_argument('--lamda_ent', type=float, help='weigting for exploration bonus', default = 1.0)
+    parser.add_argument("--use_logger", action="store_true", default=False, help='whether to use logging or not')
+    parser.add_argument("--folder", type=str, default='./results/')
+    # parser.add_argument('--num_latents', type=float, help='latent dimensions', default = 64)
+    parser.add_argument('--seed', type=int, help='Random seed', default=0)
+    parser.add_argument('--pol_ent', type=float, help='weigting for exploration bonus for the policy', default = 1.0)
+    parser.add_argument("--pg_bellman", action="store_true", default=False, help='whether to use meta Bellman update')
+
+    args = parser.parse_args()
+    args.use_logger = True
+
+    if args.pg_bellman :
+        policy_name = "pg_bellman"
+    else:
+        policy_name = "baseline"
+
+    if args.use_logger:
+        logger = Logger(experiment_name = policy_name, environment_name = args.env, folder = args.folder)
+        logger.save_args(args)
+        print ('Saving to', logger.save_folder)
+
+    if args.env == 'GridWorld':
+        env = GridworldEnv()
+        eval_env = GridworldEnv()
+        mdp = build_gridworld()
+        args.env = "GridWorld"
+
+    elif args.env == 'WindyGridWorld':
+        env = WindyGridworldEnv()
+        eval_env = WindyGridworldEnv()
+        mdp = build_windy_gridworld()
+        args.env = "WindyGridWorld"
+
+    elif args.env == 'CliffWalking':
+        env = gym.make("CliffWalking-v0")
+        eval_env = gym.make("CliffWalking-v0")
+    elif args.env == 'FrozenLake':
+        env = gym.make("FrozenLake-v0")
+        eval_env = gym.make("FrozenLake-v0")
+
+        mdp = build_FrozenLake()
+        args.env = "FrozenLake"
+
+    elif args.env == 'FrozenLake8':
+        env = gym.make("FrozenLake8x8-v0")
+        eval_env = gym.make("FrozenLake8x8-v0")
+    elif args.env == 'Taxi':
+        env = gym.make("Taxi-v2")
+        eval_env = gym.make("Taxi-v2")
+    elif args.env=='twostateMDP':
+        env = gym.make('twostateMDP-v0')
+        eval_env=gym.make('twostateMDP-v0')
+        mdp = mdp_fig2d()
+        args.env = mdp_fig2d
+
+
+    env.seed(args.seed)
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
+    torch.backends.cudnn.deterministic = True
+    env.reset()
+
+
+
+    res_PGT = [single_run(env = env, eval_env = eval_env, args.num_episodes = args.num_episodes, lr_actor=args.lr_actor, lr_critic=args.lr_critic) for _ in range(args.num_runs)]
+    returns_PGT = np.array([i[0] for i in res_PGT])
+    samples_PGT = np.array([i[1] for i in res_PGT])
+
+    np.save(logger.save_folder + '/', returns_PGT)
+    logger.save_2(returns_PGT)
+
+if __name__ == '__main__':
+    main()
 
