@@ -88,6 +88,21 @@ def get_env():
         args.env = environments.mdp_fig2d
     return env, eval_env, mdp
 
+def one_hot_ify(state, num_states):
+    res = torch.zeros(1, num_states)
+    res[0,state] = 1
+    return res
+
+def softmax(vals, temp=1.):
+    """Batch softmax
+    Args:
+        vals (np.ndarray): S x A. Applied row-wise
+        t (float, optional): Defaults to 1.. Temperature parameter
+    Returns:
+        np.ndarray: S x A
+    """
+    return np.exp(  (1./temp) * vals - logsumexp(  (1./temp) * vals, axis=1, keepdims=True) )
+
 if __name__ == "__main__":
     logger = Logger(experiment_name="test", environment_name="test_env")
     logger.save_args(args)
