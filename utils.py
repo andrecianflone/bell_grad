@@ -1,8 +1,11 @@
-import numpy as np
 import random
 import os
 import time
 import json
+import torch
+import autograd.numpy as np
+import environments
+from autograd.scipy.misc import logsumexp
 
 create_folder = lambda f: [os.makedirs(f) if not os.path.exists(f) else False]
 class Logger(object):
@@ -53,7 +56,7 @@ class Logger(object):
         with open(os.path.join(self.save_folder, 'params.json'), 'w') as f:
               json.dump(dict(args._get_kwargs()), f)
 
-def get_env():
+def get_env(args):
     if args.env == 'GridWorld':
         from envs.gridworld import GridworldEnv
         env = GridworldEnv()

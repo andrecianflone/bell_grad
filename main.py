@@ -1,35 +1,33 @@
+import argparse
+from collections import deque
+
 import numpy as np
 import gym
-from collections import deque
-import matplotlib.pyplot as plt
-import pyprind
-import pandas
-
 import torch
 import torch.nn as nn
 import torch.functional as F
 import torch.optim as optim
-import models
-import environments
-
-from functools import partial
 import autograd.numpy as np
-from autograd import value_and_grad
-from autograd.scipy.misc import logsumexp
-
 from scipy.stats import entropy
-import argparse
+
+import models
 import utils
 from utils import one_hot_ify
 import rl_tools
 
-def single_run(env, eval_env,
-                num_episodes = 100,
-                num_eval_episodes = 25,
-                max_steps = 200,
-                γ = 1.0,
-                lr_actor = 0.01,
-                lr_critic = 0.05):
+def single_run(
+        args,
+        logger,
+        env,
+        eval_env,
+        num_episodes = 100,
+        num_eval_episodes = 25,
+        max_steps = 200,
+        γ = 1.0,
+        lr_actor = 0.01,
+        lr_critic = 0.05,
+        pol_ent=1):
+    """Main algo to train an RL agent"""
     num_states = env.observation_space.n
     num_actions = env.action_space.n
     return_run = np.zeros(num_episodes)
@@ -244,11 +242,14 @@ def main():
     res_PGT = []
     for _ in range(args.num_runs):
         res = single_run(
+                args,
+                logger,
                 env = env,
                 eval_env = eval_env,
                 num_episodes = args.num_episodes,
                 lr_actor=args.lr_actor,
-                lr_critic=args.lr_critic)
+                lr_critic=args.lr_critic,
+                pol_ent=args.pol_ent)
         res_PGT.append(res)
 
     # Save results

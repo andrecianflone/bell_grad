@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 
 class GradientNetwork(nn.Module):
     def __init__(self, state_dim, feature_size=64):

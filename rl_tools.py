@@ -1,4 +1,7 @@
-import numpy as np
+import matplotlib.pyplot as plt
+import autograd.numpy as np
+from autograd import value_and_grad
+import utils
 
 def solve_mdp(P, R, gamma, initial_distribution, policy):
     """ Policy Evaluation Solver
@@ -99,7 +102,7 @@ def value_iteration(P, R, gamma, num_iters=10):
         qf = R + gamma*np.einsum('ast,t->sa', P, np.max(qf, axis=1))
     return np.max(qf, axis=1), qf
 
-def objective(params, lmbda):
+def objective(params, lmbda, mdp, gamma, initial_distribution, args):
     """Objective for exact solution"""
     jtheta = policy_performance(params, utils.softmax, mdp, (1-gamma)*initial_distribution, args)
     reg = entropy_regularizer(params, utils.softmax, mdp, initial_distribution)
@@ -122,7 +125,7 @@ def exact_solution(args, mdp, plot=True):
         logits_items = []
         logits = np.zeros((P.shape[-1], P.shape[0]))
         for _ in range(num_iterations):
-            v, g = val_grad(logits,items)
+            v, g = val_grad(logits,items,mdp,gamma,initial_distribution,args)
             logits_items.append(np.copy(logits))
             logits += lr*g
         logits_items.append(np.copy(logits))
