@@ -2,7 +2,6 @@
 
 #set -x
 
-
 envs=(twostateMDP GridWorld WindyGridWorld FrozenLake CliffWalking)
 seeds=(0 1 2)
 nepisodes=(2000)
